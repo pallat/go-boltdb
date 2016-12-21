@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 
 	"log"
 
@@ -25,11 +24,12 @@ func main() {
 
 	fmt.Println("key", key, "value", val)
 
-	db, err := bolt.Open("my.db", 0666, nil)
+	o := bolt.DefaultOptions
+	db, err := bolt.Open("my.db", 0666, o)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.Remove(db.Path())
+	// defer os.Remove(db.Path())
 
 	insert(db, "widgets", key, val)
 
@@ -54,13 +54,14 @@ func query(db *bolt.DB, bucket, k string) (string, error) {
 func insert(db *bolt.DB, bucket, k, v string) error {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		// Create a bucket.
-		b, err := tx.CreateBucket([]byte(bucket))
+		b, err := tx.CreateBucketIfNotExists([]byte(bucket))
 		if err != nil {
 			return err
 		}
 
 		// Set the value "bar" for the key "foo".
 		if err := b.Put([]byte(k), []byte(v)); err != nil {
+			fmt.Println()
 			return err
 		}
 		return nil
